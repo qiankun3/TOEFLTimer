@@ -19,6 +19,7 @@ import re
 import datetime
 import os
 
+# get the path of the target file
 def path(relative_path):
     if hasattr(sys, "_MEIPASS"):
         base_path = sys._MEIPASS
@@ -26,24 +27,26 @@ def path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-
-def get_filename():
+# generate the file name with date and time
+def filename_generator():
     time_startrecord = re.sub('[^A-Za-z0-9]+', '', str(datetime.datetime.now()))
     return time_startrecord[:14] + ".wav"
 
-def get_time(filename):
+# get the duaration time of a audio file
+def get_duration(filename):
     pf = filename
     with contextlib.closing(wave.open(pf,'r')) as f:
         frames = f.getnframes()
         rate = f.getframerate()
-        return math.ceil(round(frames / float(rate), 3))
+        return math.ceil(round(frames / float(rate), 3))/100
     
 def display(time):
-    s, cs = divmod(time, 100)
-    m, s = divmod(s, 60)
+    #s, cs = divmod(time, 100)
+    #m, s = divmod(s, 60)
+    m, s = divmod(time, 60)
 #    h, m = divmod(m, 60)
 #    return "%d:%02d:%02d:%02d" % (h, m, s, cs)
-    return "%02d:%02d:%02d" % (m, s, cs)
+    return "%02d:%02d" % (m, s)
 
 def load_image(filename, factor = 1):
     load = Image.open(filename)
@@ -51,15 +54,18 @@ def load_image(filename, factor = 1):
     render = ImageTk.PhotoImage(load.resize((int(x*factor),int(y*factor)), Image.ANTIALIAS))
     return render
 
+# the App Class
 class TOEFLTimer(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 #        self.pack(padx=20, pady=20)
         self.title("TEOFL Speaking Timer")
-        
         self.geometry("500x450")
         self.resizable(0, 0)
-        
+        self.menubar = tk.Menu(self)
+#        self.options = tk.Menu(self.menu, tearoff = 0)
+#        self.options.add_command(label="New")
+        self.config(menu = self.menubar)
         self._welcome = "Welcome to TOEFL Timer Lite"
         self.label = tk.Label(self, text = self._welcome, width=35, font = "Helvetica 12 bold")
         
@@ -75,7 +81,7 @@ class TOEFLTimer(tk.Tk):
         self._playing1 = load_image(path("resources/playing1.png"), 0.02)
         self._recordingindic = True
         self._playingindic = False
-        self.recording = tk.Label(self, image=None)
+        self.recording = tk.Label(self, image=self._recording1)
 #        self.recording.image = self._recording
         self.recording.place(x=0, y=0)
         
@@ -93,7 +99,7 @@ class TOEFLTimer(tk.Tk):
         self._task = 0
         self._prepare = "Begin to prepare your response after the beep!"
         self._speak = "Begin speak after the beep!"
-        self._remaining = 1500
+        self._remaining = 15
         self._barlen = 15
         self._played = 1
         self._recordstart = 1
@@ -101,6 +107,7 @@ class TOEFLTimer(tk.Tk):
         self._idletime = 0
         self.protocol("WM_DELETE_WINDOW", self.simple_close)
         self._filename = ''
+        self._p = None
         
         def clicked0():
             if self.button1["text"] == "Pause":
@@ -123,22 +130,24 @@ class TOEFLTimer(tk.Tk):
                 self.button1.config(state = 'normal', text = 'Start')
                 self.reset()
 #        self.button0 = tk.Button(self)
-        self.button1 = tk.Button(self, text="Start", command = clicked0, font = "Helvetica 12 bold")
-        self.button2 = tk.Button(self, text="Restart", state="disabled", command = clicked1, font = "Helvetica 12 bold")
-        
+        self.button1 = tk.Button(self, text="Start", command = clicked0, width = 10, height = 2, font = "Helvetica 10 bold")
+        self.button2 = tk.Button(self, text="Restart", state="disabled", command = clicked1, width = 10, height = 2, font = "Helvetica 10 bold")
+
 #        self.button0.pack(side=tk.LEFT,anchor=tk.CENTER, padx=60, pady=20)
-        self.button2.pack(side=tk.RIGHT, anchor=tk.CENTER, padx=65, pady=20)
-        self.recording.pack(side=tk.RIGHT,anchor=tk.CENTER, padx=55)
-        self.button1.pack(side=tk.RIGHT, anchor=tk.CENTER, padx=55, pady=20)
+        self.button2.pack(side=tk.RIGHT, anchor=tk.CENTER, padx=50, pady=20)
+        self.recording.pack(side=tk.RIGHT,anchor=tk.CENTER, padx=50, pady=20)
+        self.button1.pack(side=tk.RIGHT, anchor=tk.CENTER, padx=50, pady=20)
 #        self.button1.grid(column=0, row=3)
 #        self.button2.grid(column=0, row=4)
         self.mainloop()
-        
+    
+    # in case it need close warning
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.destroy()
             winsound.PlaySound(None, winsound.SND_PURGE)
             
+    # blinking the icon while recording or playing
     def blinking(self):
         if self._task == 1:
             if self._recordingindic:
@@ -164,10 +173,11 @@ class TOEFLTimer(tk.Tk):
             self.after_cancel(self._job)
             self._job = None
             self._task = 0
+        self.recording.configure(image = self._recording1)
         self.label.configure(text = self._welcome)
         self.label_timer.configure(text = "")
         self.bar.configure(background = "grey94")
-        self._remaining = 1500
+        self._remaining = 15
         self._played = 1
         self._recordstart = 1
         self._play = None
@@ -184,8 +194,6 @@ class TOEFLTimer(tk.Tk):
 
 
         if self._remaining <= 0 and self._task > 0:
-
-#            self.label_timer.configure(text=self._remaining)
             self.bar.configure(background = "grey94")
             self.recording.configure(image = self._playing)
             if self._task == 1:
@@ -193,22 +201,17 @@ class TOEFLTimer(tk.Tk):
                 self.button1.config(text = 'Play')
                 self._playingindic = True
                 self._task = 2
-                self._remaining = 4500
+                self._remaining = 45
                 self._played = 1
+                self._idletime += 1
             else:
                 self.label_timer.configure(text="You've completed!")
-#            if self._playingindic == True:
-#                winsound.PlaySound(self._filename, winsound.SND_ASYNC)
-#                self.blinking()
-#        elif self._remaining < 0 and self._task == 0:
-            
-            
-        
+
         elif pause:
             winsound.PlaySound(None, winsound.SND_PURGE)
             self._idletime = 0
             self.label_timer.configure(text= display(self._remaining))
-            self.bar.configure(width = (self._remaining//self._barlen), anchor="w")
+            self.bar.configure(width = (self._remaining*100//self._barlen), anchor="w")
             if self._job is not None:
                 self.after_cancel(self._job)
                 self._job = None
@@ -219,19 +222,19 @@ class TOEFLTimer(tk.Tk):
                 if self._played:
                     winsound.PlaySound(path('resources/15.wav'), winsound.SND_ASYNC)
                     self._played -= 1
-                    self._idletime = get_time(path('resources/15.wav'))*100
+                    self._idletime = get_duration(path('resources/15.wav'))*100 + 1
             elif self._task == 1:
                 self.label.configure(text = self._speak)
                 if self._played:
                     winsound.PlaySound(path('resources/45.wav'), winsound.SND_ASYNC)
                     self._played -= 1
-                    self._idletime = get_time(path('resources/45.wav'))*100
+                    self._idletime = get_duration(path('resources/45.wav'))*100 + 1
                 if self._recordstart and not self._idletime:
-                    self._filename = get_filename()
+                    self._filename = filename_generator()
                     si = subprocess.STARTUPINFO()
                     si.dwFlags|= subprocess.STARTF_USESHOWWINDOW
                     #subprocess.Popen([sys.executable, path('resources/recorder.py'), self._filename], stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,startupinfo=si)
-                    subprocess.Popen([path('resources/recorder.exe'), self._filename], stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,startupinfo=si)
+                    self._p = subprocess.Popen([path('resources/recorder.exe'), self._filename], stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,startupinfo=si)
 #                    cmd = [sys.executable, '-c', "import recorder; recorder.record(45, '111.wav')"]
 #                    subprocess.Popen(cmd,stdin=child1.stdout,stdout=subprocess.PIPE)
                     self._recordstart -= 1
@@ -239,29 +242,36 @@ class TOEFLTimer(tk.Tk):
                 if self._played:
                     self.label.configure(text = "Review your recording...")
                     winsound.PlaySound(self._filename, winsound.SND_ASYNC)
-#                    self._idletime = get_time(self._filename)*100
                     self._played -= 1
 
-#                    self.reset()
-            
-            if self._remaining < 0 and self._task == 0:
-                self._remaining = 4501   
+            if not self._idletime:
+                self.blinking()
+                if self._remaining:
+                    self._remaining -= 1
+            else:
+                self._idletime -= 1
+                
+            self.label_timer.configure(text=display(self._remaining))
+            self.bar.configure(width = (self._remaining*100//self._barlen), anchor="w")
+
+
+            if self._remaining <= 0 and self._task == 0:
+                # self.bar.configure(background = "grey94")
+                self.label_timer.configure(text = display(self._remaining))
+                self._remaining = 45
                 self._barlen = 45
                 self._task += 1
                 self._played = 1
-                
-                
-            self.label_timer.configure(text=display(self._remaining))
-            self.bar.configure(width = (self._remaining//self._barlen), anchor="w")
-            if not self._idletime:
-                self._remaining -= 1
-                if self._remaining%100 == 0:
-                    self.blinking()
-
-            else:
-                self._idletime -= 1
-            self._job = self.after(10, self.countdown)  
+            self._job = self.after(1000, self.countdown)  
             
         
+def main():
+  
+    root = Tk()
+    root.geometry("250x150+300+300")
+    app = Example()
+    root.mainloop()  
+    
+    
 if __name__ == "__main__":
     app = TOEFLTimer()
