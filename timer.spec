@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['timer3.py'],
+a = Analysis(['timer.py'],
              pathex=['C:\\Users\\ray\\Desktop\\timer'],
              binaries=[],
              datas=[],
