@@ -176,7 +176,9 @@ class TOEFLTimer(tk.Tk):
             self.reset(self._tuple)
     
     def about(self):
-        tk.messagebox.showinfo("About TOEFL Timer", "A Timer and Recorder for TOEFL Speaking Test")
+        tk.messagebox.showinfo("About TOEFL Timer", '''                   TOEFL Timer Lite
+A Timer and Recorder for TOEFL Speaking Test
+                      Version 1.0.4''')
 
     # in case it need close warning
     def on_closing(self):
@@ -251,6 +253,7 @@ class TOEFLTimer(tk.Tk):
             self._job = None
             self.set_task(0)
         self.status.configure(image = self._recording1)
+        self.progressbar.configure(value = 100)
         self.set_tuple(t)
         self.label.configure(text = self._welcome)
         if self._barlen == 15:
@@ -273,8 +276,8 @@ class TOEFLTimer(tk.Tk):
             self.status.configure(image = self._playing1)
             if self._task == 1:
                 self.timerlabel.configure(text="Time's up!")
-                self.button1.config(text = 'Play')
-                self._task = 2
+                self.button1.config(text = 'Play', state = 'normal')
+                self.set_task(2)
                 self.toggle_status(False)
                 self.set_remaining(self._rectime)
                 self.set_played(True)
@@ -321,6 +324,8 @@ class TOEFLTimer(tk.Tk):
 
             if not self._idletime:
                 self.blinking()
+                if self._task == 1:
+                    self.button1.configure(state = 'disabled')
                 self.remaining_minusone()
             else:
                 self._idletime -= 1
@@ -333,7 +338,7 @@ class TOEFLTimer(tk.Tk):
                 self.timerlabel.configure(text = display(self._remaining))
                 self._remaining = self._rectime
                 self.set_barlen(self._rectime)
-                self._task += 1
+                self.set_task(1)
                 self.set_played(True)
             self._job = self.after(1000, self.countdown)  
             
