@@ -5,7 +5,7 @@ Created on Sun Jul 22 20:08:31 2018
 @author: ray
 """
 import tkinter as tk
-from tkinter import font
+from tkinter import font, ttk
 import tkinter.messagebox as messagebox
 from PIL import ImageTk, Image
 import winsound
@@ -40,11 +40,7 @@ def get_duration(filename):
         return math.ceil(round(frames / float(rate), 3))/100
     
 def display(time):
-    #s, cs = divmod(time, 100)
-    #m, s = divmod(s, 60)
     m, s = divmod(time, 60)
-#    h, m = divmod(m, 60)
-#    return "%d:%02d:%02d:%02d" % (h, m, s, cs)
     return "%02d:%02d" % (m, s)
 
 def load_image(filename, factor = 1):
@@ -65,7 +61,6 @@ SPEAKING_REMAINDER = path('resources/45.wav')
 class TOEFLTimer(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
-#        self.pack(padx=20, pady=20)
         self.title("TEOFL Speaking Timer")
         self.geometry("500x500+100+100")
         self.resizable(1, 1)
@@ -115,13 +110,15 @@ class TOEFLTimer(tk.Tk):
         self.title("TEOFL Speaking Timer")
         self.geometry("500x500+100+100")
         self.resizable(1, 1)
-
         
+#        s = ttk.Style()
+#        s.theme_use('clam')
+#        s.configure("pb.Horizontal.TProgressbar",troughcolor = 'grey94', foreground = 'grey94', background='grey94')
+        self.progressbar = ttk.Progressbar(self,orient=tk.HORIZONTAL, value = 100,length=100,mode='determinate')
         self.label = tk.Label(self, text = self._welcome, width = 35, font = self.set_font("Times", 12, "bold"))
         self.canvas = tk.Label(self, image = self._theman)       
         self.status = tk.Label(self, image = self._recording1)
-        self.timerlabel = tk.Label(self, text = "", width = 35, font = self.set_font("Times", 16, "bold"))
-        self.bar = tk.Label(self, width = ((self.winfo_width()-100)//4), font = self.set_font("Times", 5)) 
+        self.timerlabel = tk.Label(self, text = "Question 1 & 2", width = 35, font = self.set_font("Times", 16, "bold"))
         self.button1 = tk.Button(self, text="Start", command = self.clicked0, width = 10, height = 2, font = self.set_font("Times", 10, "bold"))
         self.button2 = tk.Button(self, text="Restart", state="disabled", command = self.clicked1, width = 10, height = 2, font = self.set_font("Times", 10, "bold"))
         
@@ -129,21 +126,18 @@ class TOEFLTimer(tk.Tk):
         self.menubar = tk.Menu(self)
         self.config(menu = self.menubar)
         self.optionMenu = tk.Menu(self.menubar, tearoff=False)
-        
         self.newMenu = tk.Menu(self.optionMenu, tearoff=False)
         self.newMenu.add_command(label = "Question 1 & 2", command=lambda:self.reset((15,45)))
         self.newMenu.add_command(label = "Question 3 & 4", command=lambda:self.reset((30,60)))
         self.newMenu.add_command(label = "Question 5 & 6", command=lambda:self.reset((20,60)))
         self.optionMenu.add_cascade(label = "New",menu=self.newMenu)
         self.optionMenu.add_command(label="Exit", command=self.simple_close)
-        
         self.helpMenu = tk.Menu(self.menubar, tearoff = False)
         self.helpMenu.add_command(label = "About", command = self.about)
         self.menubar.add_cascade(label="Options", menu=self.optionMenu)
         self.menubar.add_cascade(label="Help", menu=self.helpMenu)
         
         self.pack()
-        
         self.mainloop()
         
     def set_font(self, f, s, w = "normal"):
@@ -154,7 +148,7 @@ class TOEFLTimer(tk.Tk):
         self.label.pack(padx=20, pady=20, fill = tk.BOTH, expand=1)
         self.canvas.pack(padx=10, pady=10, fill = tk.BOTH, expand=1)
         self.timerlabel.pack(fill = tk.BOTH, expand=1)
-        self.bar.pack(anchor="w", padx=50, pady=10, fill = tk.Y, expand=1)
+        self.progressbar.pack(anchor=tk.CENTER,  fill = tk.BOTH, padx = 50, pady = 10, expand=1)
         self.button2.pack(side=tk.RIGHT, anchor=tk.CENTER, padx=50, pady=20, fill = tk.BOTH, expand=1)
         self.status.pack(side=tk.RIGHT,anchor=tk.CENTER, padx=50, pady=20, fill = tk.BOTH, expand=1)
         self.button1.pack(side=tk.RIGHT, anchor=tk.CENTER, padx=50, pady=20, fill = tk.BOTH, expand=1)
@@ -246,23 +240,25 @@ class TOEFLTimer(tk.Tk):
                 self._status = True
         else:
             self._status = b
-        
+    
+    def hide_me(event):
+        event.widget.pack_forget()
+
+    
     def reset(self, t):
         if self._job is not None:
             self.after_cancel(self._job)
             self._job = None
             self.set_task(0)
         self.status.configure(image = self._recording1)
-        # self.label.configure(text = self._welcome)
-        self.bar.configure(background = "grey94")
         self.set_tuple(t)
-        self.timerlabel.configure(text = "")
+        self.label.configure(text = self._welcome)
         if self._barlen == 15:
-            self.label.configure(text = "Question 1 & 2")
+            self.timerlabel.configure(text = "Question 1 & 2")
         elif self._barlen == 30:
-            self.label.configure(text = "Question 3 & 4")
+            self.timerlabel.configure(text = "Question 3 & 4")
         else:
-            self.label.configure(text = "Question 5 & 6")
+            self.timerlabel.configure(text = "Question 5 & 6")
         self.set_played(True)
         self.set_rec(True)
         self.set_idletime(0)
@@ -270,12 +266,10 @@ class TOEFLTimer(tk.Tk):
         winsound.PlaySound(None, winsound.SND_PURGE)
         
     def countdown(self, remaining = None, pause = False):
-        self.bar.configure(background = "gainsboro")
         if remaining is not None:
             self.set_remaining(remaining)
 
         if self._remaining <= 0 and self._task > 0:
-            self.bar.configure(background = "grey94")
             self.status.configure(image = self._playing1)
             if self._task == 1:
                 self.timerlabel.configure(text="Time's up!")
@@ -292,7 +286,7 @@ class TOEFLTimer(tk.Tk):
             winsound.PlaySound(None, winsound.SND_PURGE)
             self._idletime = 0
             self.timerlabel.configure(text= display(self._remaining))
-            self.bar.configure(width = (self._remaining*((self.winfo_width()-100)//4)//self._barlen), anchor="w")
+            self.progressbar.configure(value = (self._remaining)*100//self._barlen)
             if self._job is not None:
                 self.after_cancel(self._job)
                 self._job = None
@@ -332,7 +326,7 @@ class TOEFLTimer(tk.Tk):
                 self._idletime -= 1
                 
             self.timerlabel.configure(text=display(self._remaining))
-            self.bar.configure(width = (self._remaining*((self.winfo_width()-100)//4)//self._barlen), anchor="w")
+            self.progressbar.configure(value = (self._remaining)*100//self._barlen)
 
 
             if self._remaining <= 0 and self._task == 0:
