@@ -265,7 +265,7 @@ A Timer and Recorder for TOEFL Speaking Test
         self.set_played(True)
         self.set_rec(True)
         self.set_idletime(0)
-        self.button1.config(text = 'Start')
+        self.button1.config(text = 'Start', state = "normal")
         winsound.PlaySound(None, winsound.SND_PURGE)
         
     def countdown(self, remaining = None, pause = False):
